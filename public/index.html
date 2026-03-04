@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Political Conflict Assessment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #f4f1ec;
+      color: #2c2c2c;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+      max-width: 680px;
+      width: 100%;
+      padding: 48px 52px;
+    }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      height: 6px;
+      background: #e8e4dc;
+      border-radius: 99px;
+      margin-bottom: 36px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8b5e3c, #c2956c);
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+
+    .step-label {
+      font-family: 'Arial', sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9a8070;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: normal;
+      line-height: 1.3;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #6b6b6b;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    textarea {
+      width: 100%;
+      border: 2px solid #ddd8cf;
+      border-radius: 10px;
+      padding: 16px;
+      font-family: 'Georgia', serif;
+      font-size: 15px;
+      color: #2c2c2c;
+      resize: vertical;
+      min-height: 120px;
+      transition: border-color 0.2s;
+      background: #faf9f7;
+    }
+    textarea:focus { outline: none; border-color: #8b5e3c; }
+
+    .question-text {
+      font-size: 18px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+      color: #1a1a1a;
+    }
+
+    .rating-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #9a8070;
+      margin-bottom: 10px;
+      font-family: 'Arial', sans-serif;
+    }
+    .rating-options {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .rating-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid #ddd8cf;
+      background: #faf9f7;
+      font-size: 15px;
+      font-family: 'Arial', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #5a4a3a;
+      font-weight: bold;
+    }
+    .rating-btn:hover { border-color: #8b5e3c; background: #f5ede4; }
+    .rating-btn.selected { background: #8b5e3c; border-color: #8b5e3c; color: #fff; }
+
+    .choices { display: flex; flex-direction: column; gap: 12px; }
+    .choice-btn {
+      width: 100%;
+      text-align: left;
+      padding: 16px 20px;
+      border: 2px solid #ddd8cf;
+      border-radius: 10px;
+      background: #faf9f7;
+      font-family: 'Georgia', serif;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #2c2c2c;
+      line-height: 1.45;
+    }
+    .choice-btn:hover { border-color: #8b5e3c; background: #f5ede4; }
+    .choice-btn.selected { background: #8b5e3c; border-color: #8b5e3c; color: #fff; }
+
+    /* Navigation */
+    .nav { margin-top: 40px; display: flex; justify-content: space-between; align-items: center; }
+
+    .btn-primary {
+      background: #8b5e3c;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-family: 'Georgia', serif;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #6e4a2e; }
+    .btn-primary:disabled { background: #c5b8ac; cursor: default; }
+
+    .btn-back {
+      background: none;
+      border: none;
+      color: #9a8070;
+      font-size: 14px;
+      font-family: 'Arial', sans-serif;
+      cursor: pointer;
+      padding: 8px;
+    }
+    .btn-back:hover { color: #5a4a3a; }
+    .btn-back:disabled { color: #d8d0c8; cursor: default; pointer-events: none; }
+
+    /* Welcome */
+    .welcome-icon { font-size: 48px; margin-bottom: 24px; }
+
+    /* ── Conversational question ── */
+    .conv-user-echo {
+      background: #eef4ee;
+      border-left: 3px solid #6a9a6a;
+      border-radius: 0 10px 10px 0;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #2a3a2a;
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    .llm-response {
+      background: #f0ede8;
+      border-left: 3px solid #8b5e3c;
+      border-radius: 0 10px 10px 0;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .llm-response-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9a8070;
+      margin-bottom: 8px;
+      font-family: 'Arial', sans-serif;
+    }
+    .llm-response p {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #3a2e25;
+    }
+
+    .conv-followup-label {
+      font-size: 16px;
+      color: #1a1a1a;
+      margin: 4px 0 12px;
+      line-height: 1.5;
+    }
+
+    .btn-get-response {
+      display: inline-block;
+      margin-top: 14px;
+      background: #4a7c6a;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-family: 'Georgia', serif;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-get-response:hover { background: #3a6a58; }
+    .btn-get-response:disabled { background: #9abdb0; cursor: default; }
+
+    /* Loading */
+    .loading-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 0 8px;
+      color: #9a8070;
+      font-size: 14px;
+      font-family: 'Arial', sans-serif;
+    }
+    .loading-dots { display: flex; gap: 5px; }
+    .loading-dots span {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #8b5e3c;
+      animation: ldots 1.2s infinite ease-in-out;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes ldots {
+      0%, 80%, 100% { transform: scale(0.55); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Results */
+    .score-circle {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8b5e3c, #c2956c);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 32px;
+      box-shadow: 0 4px 24px rgba(139,94,60,0.25);
+    }
+    .score-number { font-size: 42px; font-weight: bold; color: #fff; line-height: 1; font-family: 'Arial', sans-serif; }
+    .score-label { font-size: 12px; color: rgba(255,255,255,0.8); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Arial', sans-serif; }
+
+    .result-category { font-size: 22px; text-align: center; margin-bottom: 12px; color: #8b5e3c; }
+    .result-description { font-size: 15px; color: #4a4a4a; line-height: 1.7; margin-bottom: 28px; text-align: center; }
+
+    .result-breakdown {
+      background: #f9f7f4;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .result-breakdown h3 {
+      font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #9a8070; margin-bottom: 16px; font-family: 'Arial', sans-serif;
+    }
+    .dim-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .dim-name { width: 160px; font-size: 13px; color: #5a4a3a; flex-shrink: 0; }
+    .dim-bar-wrap { flex: 1; height: 8px; background: #e8e4dc; border-radius: 99px; overflow: hidden; }
+    .dim-bar-fill { height: 100%; background: linear-gradient(90deg, #8b5e3c, #c2956c); border-radius: 99px; }
+    .dim-pct { font-size: 13px; color: #9a8070; font-family: 'Arial', sans-serif; width: 36px; text-align: right; }
+
+    .reflection-box {
+      border-left: 3px solid #c2956c;
+      padding: 16px 20px;
+      background: #fdf9f5;
+      border-radius: 0 10px 10px 0;
+      margin-bottom: 28px;
+    }
+    .reflection-box p { font-size: 14px; font-style: italic; color: #6b5a4a; line-height: 1.6; }
+    .reflection-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #9a8070; margin-bottom: 6px; font-family: 'Arial', sans-serif; }
+
+    /* NLP analysis */
+    .nlp-section {
+      background: #f0ede8;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .nlp-section h3 {
+      font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #9a8070; margin-bottom: 16px; font-family: 'Arial', sans-serif;
+    }
+    .nlp-insight { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+    .nlp-dot { width: 7px; height: 7px; border-radius: 50%; background: #8b5e3c; margin-top: 7px; flex-shrink: 0; }
+    .nlp-insight p { font-size: 14px; color: #3a3a3a; line-height: 1.7; }
+
+    .btn-restart {
+      display: block; text-align: center;
+      background: #f4f1ec; color: #8b5e3c;
+      border: 2px solid #c2956c;
+      border-radius: 10px; padding: 12px 24px;
+      font-size: 15px; font-family: 'Georgia', serif;
+      cursor: pointer; width: 100%;
+      transition: background 0.15s;
+    }
+    .btn-restart:hover { background: #f5ede4; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 520px) {
+      .card { padding: 32px 24px; }
+      h1 { font-size: 22px; }
+      .rating-btn { width: 44px; height: 44px; font-size: 14px; }
+      .dim-name { width: 110px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+<div class="card" id="app">
+
+  <!-- ── WELCOME ── -->
+  <div id="screen-welcome">
+    <div class="welcome-icon">&#9876;</div>
+    <h1>How do you handle political conflict?</h1>
+    <p class="subtitle">
+      This assessment explores how you respond to political disagreement —
+      your instincts, habits, and emotional patterns. It includes a short
+      AI-powered conversation and ends with personalized insights drawn from
+      your own words. Takes about 8&ndash;10 minutes.
+    </p>
+    <div class="nav" style="justify-content:flex-end">
+      <button class="btn-primary" onclick="beginQuiz()">Begin &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ── QUIZ ── -->
+  <div id="screen-quiz" class="hidden">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="step-label" id="step-label"></div>
+    <div id="question-area"></div>
+    <div class="nav">
+      <button class="btn-back" id="btn-back" onclick="goBack()">&#8592; Back</button>
+      <button class="btn-primary" id="btn-next" onclick="goNext()" disabled>Continue &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div id="screen-results" class="hidden">
+    <div id="results-area"></div>
+    <button class="btn-restart" onclick="restartQuiz()">Take it again</button>
+  </div>
+
+</div>
+
+<script>
+  // ── Questions ──────────────────────────────────────────────────
+  const questions = [
+    {
+      id: 'open', type: 'open',
+      text: 'Before we begin \u2014 in your own words, what do you find hardest about political disagreement?',
+      subtitle: 'There are no right or wrong answers. This is just for your reflection.',
+      placeholder: 'e.g. \u201cI get upset when people dismiss my views\u201d or \u201cI never know when to speak up\u2026\u201d'
+    },
+    { id: 'q1', type: 'rating', dimension: 'emotional', reverse: true,
+      text: 'When someone expresses a political view I strongly disagree with, I feel personally attacked.' },
+    { id: 'q2', type: 'rating', dimension: 'emotional', reverse: false,
+      text: 'I can listen to someone explain an opposing political view without interrupting or getting angry.' },
+    { id: 'q3', type: 'rating', dimension: 'empathy', reverse: false,
+      text: 'I believe people on the opposite end of the political spectrum are generally decent people.' },
+    { id: 'q4', type: 'rating', dimension: 'empathy', reverse: false,
+      text: 'I find myself genuinely curious about why someone holds a political view very different from mine.' },
+    { id: 'q5', type: 'rating', dimension: 'openness', reverse: false,
+      text: 'After a political disagreement, I sometimes wonder whether my own position might be incomplete.' },
+    {
+      id: 'q6', type: 'multiple', dimension: 'behavior',
+      text: 'When a friend or family member expresses a political view you strongly disagree with, you typically:',
+      choices: [
+        { label: 'Change the subject to avoid tension', score: 1 },
+        { label: "Argue until they understand where I'm coming from", score: 2 },
+        { label: 'Share my view calmly and let them respond', score: 3 },
+        { label: 'Ask questions to understand how they got there', score: 4 }
+      ]
+    },
+    {
+      id: 'q7', type: 'multiple', dimension: 'openness',
+      text: 'How often do you seek out news or perspectives that challenge your political views?',
+      choices: [
+        { label: 'Never \u2014 I stick to sources I already trust', score: 1 },
+        { label: 'Rarely \u2014 only when I stumble across them', score: 2 },
+        { label: 'Sometimes \u2014 I try to stay somewhat balanced', score: 3 },
+        { label: 'Often \u2014 I actively look for different viewpoints', score: 4 }
+      ]
+    },
+    {
+      id: 'q8', type: 'multiple', dimension: 'openness',
+      text: "When you realize you're losing a political argument, you usually:",
+      choices: [
+        { label: 'Dig in and defend my position harder', score: 1 },
+        { label: 'Walk away and end the conversation', score: 2 },
+        { label: 'Acknowledge the good points the other person made', score: 3 },
+        { label: 'Genuinely reconsider whether I might be wrong', score: 4 }
+      ]
+    },
+    {
+      id: 'q9', type: 'multiple', dimension: 'emotional',
+      text: 'How do you typically feel after a heated political discussion?',
+      choices: [
+        { label: 'Frustrated, drained, or upset', score: 1 },
+        { label: "Indifferent \u2014 it doesn't affect me much either way", score: 2 },
+        { label: 'Thoughtful, even when I still disagree', score: 3 },
+        { label: 'Energized \u2014 I find the exchange stimulating', score: 4 }
+      ]
+    },
+
+    // ── Conversational questions ──────────────────────────────────
+    {
+      id: 'conv1', type: 'conversational',
+      text: 'Describe a specific political conversation that felt difficult or uncomfortable for you. What happened, and how did you respond?'
+    },
+    {
+      id: 'conv2', type: 'conversational',
+      text: 'Is there a political issue where your views have shifted over time \u2014 or where you feel genuinely pulled in different directions? Tell us about it.'
+    },
+
+    // ── Transition ──────────────────────────────────────────────
+    {
+      id: 'section_demo', type: 'section',
+      heading: 'Almost done!',
+      text: 'Before we show your results, a few quick questions about you. Your answers are never stored or shared anywhere.'
+    },
+
+    // ── Demographics ─────────────────────────────────────────────
+    { id: 'demo_gender', type: 'demographic',
+      text: 'What is your gender?',
+      choices: ['Man', 'Woman', 'Non-binary or gender non-conforming', 'Prefer not to say'] },
+    { id: 'demo_race', type: 'demographic',
+      text: 'Which best describes your race or ethnicity?',
+      choices: ['White or Caucasian', 'Black or African American', 'Hispanic or Latino/Latina',
+                'Asian or Asian American', 'Native American or Alaska Native',
+                'Multiracial', 'Another race or ethnicity', 'Prefer not to say'] },
+    { id: 'demo_party', type: 'demographic',
+      text: 'Which best describes your political party affiliation?',
+      choices: ['Strong Democrat', 'Lean Democrat', 'Independent',
+                'Lean Republican', 'Strong Republican', 'Other or no party affiliation'] },
+    { id: 'demo_education', type: 'demographic',
+      text: 'What is the highest level of education you have completed?',
+      choices: ['High school diploma or less', 'Some college, no degree',
+                "Associate's degree", "Bachelor's degree", 'Graduate or professional degree'] },
+    { id: 'demo_activity', type: 'demographic',
+      text: 'How would you describe your level of political activity?',
+      choices: ['I rarely follow politics or vote', 'I vote but do not do much else',
+                'I follow politics closely and vote regularly',
+                'I attend events, contact officials, or donate to campaigns',
+                'I organize, volunteer, or have run for office'] }
+  ];
+
+  // ── Question type helpers ──────────────────────────────────────
+  const SCORED_TYPES = ['open', 'rating', 'multiple'];
+  const scoredQs = questions.filter(q => SCORED_TYPES.includes(q.type));
+  const convQs   = questions.filter(q => q.type === 'conversational');
+  const demoQs   = questions.filter(q => q.type === 'demographic');
+
+  // ── State ──────────────────────────────────────────────────────
+  let current   = 0;
+  let answers   = {};
+  let convState = {}; // per conv question: 'idle' | 'loading' | 'responded' | 'complete'
+
+  // ── API ────────────────────────────────────────────────────────
+  async function callApi(endpoint, body) {
+    const res  = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  }
+
+  // ── HTML escaping ──────────────────────────────────────────────
+  // For rendering in <div>/<p> — converts newlines to <br>
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+  }
+  // For rendering inside <textarea> tags — preserve newlines as-is
+  function escTa(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ── Screens ────────────────────────────────────────────────────
+  function show(id) {
+    ['screen-welcome', 'screen-quiz', 'screen-results'].forEach(s =>
+      document.getElementById(s).classList.add('hidden')
+    );
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function beginQuiz() {
+    current = 0; answers = {}; convState = {};
+    show('screen-quiz');
+    renderQuestion();
+  }
+
+  function restartQuiz() { show('screen-welcome'); }
+
+  // ── Step label ─────────────────────────────────────────────────
+  function getStepLabel(q) {
+    if (q.type === 'section') return 'About You';
+    if (q.type === 'demographic') {
+      const i = demoQs.findIndex(d => d.id === q.id) + 1;
+      return `About You \u2014 ${i} of ${demoQs.length}`;
+    }
+    if (q.type === 'conversational') {
+      const i = convQs.findIndex(c => c.id === q.id) + 1;
+      return `Reflection \u2014 ${i} of ${convQs.length}`;
+    }
+    const i = scoredQs.findIndex(s => s.id === q.id) + 1;
+    return `Question ${i} of ${scoredQs.length}`;
+  }
+
+  // ── Render question ────────────────────────────────────────────
+  function renderQuestion() {
+    const q     = questions[current];
+    const pct   = Math.round((current / questions.length) * 100);
+    const area  = document.getElementById('question-area');
+    const btn   = document.getElementById('btn-next');
+    const back  = document.getElementById('btn-back');
+
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('step-label').textContent = getStepLabel(q);
+
+    back.style.visibility = current === 0 ? 'hidden' : 'visible';
+    back.disabled = convState[q.id] === 'loading';
+
+    if (q.type === 'section') {
+      btn.disabled = false;
+      area.innerHTML = `<h1>${q.heading}</h1><p class="subtitle">${q.text}</p>`;
+    }
+
+    else if (q.type === 'open') {
+      btn.disabled = !(q.id in answers);
+      area.innerHTML = `
+        <h1>${q.text}</h1>
+        <p class="subtitle" style="margin-bottom:20px">${q.subtitle}</p>
+        <textarea id="open-input" placeholder="${q.placeholder}">${escTa(answers[q.id] || '')}</textarea>
+      `;
+      const ta = document.getElementById('open-input');
+      ta.addEventListener('input', () => {
+        answers[q.id] = ta.value.trim();
+        btn.disabled = answers[q.id].length < 3;
+      });
+    }
+
+    else if (q.type === 'rating') {
+      btn.disabled = !(q.id in answers);
+      area.innerHTML = `
+        <p class="question-text">${q.text}</p>
+        <div class="rating-labels"><span>Strongly Disagree</span><span>Strongly Agree</span></div>
+        <div class="rating-options">
+          ${[1,2,3,4,5].map(v => `
+            <button class="rating-btn ${answers[q.id] === v ? 'selected' : ''}"
+              onclick="selectRating(${v})">${v}</button>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    else if (q.type === 'multiple') {
+      btn.disabled = !(q.id in answers);
+      area.innerHTML = `
+        <p class="question-text">${q.text}</p>
+        <div class="choices">
+          ${q.choices.map(c => `
+            <button class="choice-btn ${answers[q.id] === c.score ? 'selected' : ''}"
+              onclick="selectChoice(${c.score})">${c.label}</button>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    else if (q.type === 'demographic') {
+      btn.disabled = !(q.id in answers);
+      area.innerHTML = `
+        <p class="question-text">${q.text}</p>
+        <div class="choices">
+          ${q.choices.map((c, i) => `
+            <button class="choice-btn ${answers[q.id] === c ? 'selected' : ''}"
+              onclick="selectDemographic(${i})">${c}</button>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    else if (q.type === 'conversational') {
+      renderConversational(q);
+    }
+  }
+
+  // ── Conversational rendering ───────────────────────────────────
+  function renderConversational(q) {
+    const area  = document.getElementById('question-area');
+    const btn   = document.getElementById('btn-next');
+    const back  = document.getElementById('btn-back');
+    const state = convState[q.id] || 'idle';
+    const saved = answers[q.id]   || {};
+
+    back.disabled = state === 'loading';
+    btn.disabled  = (saved.followup || '').trim().length < 5;
+
+    if (state === 'idle') {
+      area.innerHTML = `
+        <p class="question-text">${q.text}</p>
+        <textarea id="conv-ta" placeholder="Share as much or as little as you like\u2026">${escTa(saved.initial || '')}</textarea>
+        <button class="btn-get-response" id="btn-get-resp" onclick="submitConversational()"
+          ${(saved.initial || '').length >= 10 ? '' : 'disabled'}>
+          Get a response &rarr;
+        </button>
+      `;
+      const ta   = document.getElementById('conv-ta');
+      const gbtn = document.getElementById('btn-get-resp');
+      ta.addEventListener('input', () => { gbtn.disabled = ta.value.trim().length < 10; });
+    }
+
+    else if (state === 'loading') {
+      area.innerHTML = `
+        <p class="question-text">${q.text}</p>
+        <div class="conv-user-echo">${escHtml(saved.initial)}</div>
+        <div class="loading-wrap">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          Thinking&hellip;
+        </div>
+      `;
+    }
+
+    else { // 'responded' or 'complete'
+      area.innerHTML = `
+        <p class="question-text">${q.text}</p>
+        <div class="conv-user-echo">${escHtml(saved.initial)}</div>
+        <div class="llm-response">
+          <div class="llm-response-label">Response</div>
+          <p>${escHtml(saved.llmResponse)}</p>
+        </div>
+        <p class="conv-followup-label">Your response:</p>
+        <textarea id="conv-followup-ta" placeholder="Continue your reflection here\u2026">${escTa(saved.followup || '')}</textarea>
+      `;
+      const ta = document.getElementById('conv-followup-ta');
+      ta.addEventListener('input', () => {
+        const val = ta.value.trim();
+        answers[q.id] = { ...answers[q.id], followup: val };
+        if (val.length >= 5) convState[q.id] = 'complete';
+        btn.disabled = val.length < 5;
+      });
+    }
+  }
+
+  async function submitConversational() {
+    const q   = questions[current];
+    const ta  = document.getElementById('conv-ta');
+    const txt = ta.value.trim();
+    if (txt.length < 10) return;
+
+    answers[q.id]   = { initial: txt };
+    convState[q.id] = 'loading';
+    renderConversational(q);
+
+    try {
+      const { text } = await callApi('/api/chat', { questionId: q.id, userText: txt });
+      answers[q.id]   = { initial: txt, llmResponse: text };
+      convState[q.id] = 'responded';
+    } catch (err) {
+      answers[q.id]   = { initial: txt, llmResponse: 'Unable to get a response right now \u2014 please continue.', followup: '\u2014' };
+      convState[q.id] = 'complete';
+    }
+    renderConversational(q);
+  }
+
+  // ── Input handlers ─────────────────────────────────────────────
+  function selectRating(val) {
+    answers[questions[current].id] = val;
+    document.querySelectorAll('.rating-btn').forEach((b, i) => b.classList.toggle('selected', i + 1 === val));
+    document.getElementById('btn-next').disabled = false;
+  }
+
+  function selectChoice(score) {
+    answers[questions[current].id] = score;
+    document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+    event.target.classList.add('selected');
+    document.getElementById('btn-next').disabled = false;
+  }
+
+  function selectDemographic(idx) {
+    const q = questions[current];
+    answers[q.id] = q.choices[idx];
+    document.querySelectorAll('.choice-btn').forEach((b, i) => b.classList.toggle('selected', i === idx));
+    document.getElementById('btn-next').disabled = false;
+  }
+
+  // ── Navigation ─────────────────────────────────────────────────
+  function goNext() {
+    if (current < questions.length - 1) { current++; renderQuestion(); }
+    else showResults();
+  }
+
+  function goBack() {
+    if (current > 0) { current--; renderQuestion(); }
+  }
+
+  // ── Scoring ────────────────────────────────────────────────────
+  function calcScores() {
+    const dims = {
+      emotional: { raw: 0, max: 0 }, empathy: { raw: 0, max: 0 },
+      openness:  { raw: 0, max: 0 }, behavior: { raw: 0, max: 0 }
+    };
+    questions.forEach(q => {
+      if (!SCORED_TYPES.includes(q.type) || q.type === 'open') return;
+      const raw = answers[q.id] || 0;
+      const d   = dims[q.dimension];
+      if (q.type === 'rating') { d.raw += q.reverse ? (6 - raw) : raw; d.max += 5; }
+      else                     { d.raw += raw; d.max += 4; }
+    });
+    let totalRaw = 0, totalMax = 0;
+    Object.values(dims).forEach(d => { totalRaw += d.raw; totalMax += d.max; });
+    const pct     = Math.round((totalRaw / totalMax) * 100);
+    const dimPcts = {};
+    Object.entries(dims).forEach(([k, d]) => { dimPcts[k] = d.max > 0 ? Math.round((d.raw / d.max) * 100) : 0; });
+    return { pct, dims: dimPcts };
+  }
+
+  function getCategory(pct) {
+    if (pct <= 35) return {
+      name: 'Conflict Avoider',
+      description: 'Political disagreements feel threatening or overwhelming to you. You tend to either withdraw from conflict or become defensive when challenged. This is a very human response \u2014 but it often means you miss opportunities for real understanding.',
+      growth: 'Try staying in one difficult conversation a little longer than usual. Curiosity is a muscle \u2014 it gets easier with practice.'
+    };
+    if (pct <= 55) return {
+      name: 'Reluctant Participant',
+      description: "You engage with political disagreement, but it often feels uncomfortable or draining. You may find yourself going through the motions of listening while internally preparing your rebuttal. You value dialogue in principle, but it's hard to stay open when the stakes feel personal.",
+      growth: 'Before your next political conversation, set a goal: ask at least two genuine questions before sharing your own view.'
+    };
+    if (pct <= 75) return {
+      name: 'Thoughtful Engager',
+      description: "You handle political conflict reasonably well. You can listen, stay relatively calm, and engage with ideas you disagree with. You may still feel a pull toward familiar perspectives, but you're able to acknowledge complexity and nuance.",
+      growth: 'Push yourself to engage with one perspective that genuinely challenges your assumptions \u2014 not to change your mind, but to sharpen it.'
+    };
+    return {
+      name: 'Bridge Builder',
+      description: 'You approach political disagreement with curiosity, empathy, and emotional resilience. You can hold your own views firmly while remaining genuinely open to being challenged. You see political conflict not as a threat, but as an opportunity to understand people more deeply.',
+      growth: 'Consider how you might help others around you have more constructive conversations. Your skills are genuinely rare.'
+    };
+  }
+
+  // ── Demographics summary ───────────────────────────────────────
+  function buildDemoSummary() {
+    const labels = {
+      demo_gender: 'Gender', demo_race: 'Race / Ethnicity',
+      demo_party: 'Party affiliation', demo_education: 'Education',
+      demo_activity: 'Political activity'
+    };
+    const rows = Object.entries(labels)
+      .filter(([id]) => answers[id])
+      .map(([id, label]) => `
+        <div class="dim-row" style="margin-bottom:8px">
+          <div class="dim-name" style="color:#9a8070">${label}</div>
+          <div style="font-size:14px; color:#3a3a3a">${answers[id]}</div>
+        </div>
+      `).join('');
+    if (!rows) return '';
+    return `<div class="result-breakdown" style="margin-bottom:28px"><h3>Your profile</h3>${rows}</div>`;
+  }
+
+  // ── NLP analysis (async, fills in after page loads) ────────────
+  async function loadNlpAnalysis() {
+    const parts = [];
+    if (answers['open'])        parts.push(`What they find hardest about political disagreement: "${answers['open']}"`);
+    const c1 = answers['conv1'] || {};
+    if (c1.initial)             parts.push(`About a difficult political conversation: "${c1.initial}"`);
+    if (c1.followup && c1.followup.trim() !== '\u2014') parts.push(`Follow-up on that: "${c1.followup}"`);
+    const c2 = answers['conv2'] || {};
+    if (c2.initial)             parts.push(`About political views shifting: "${c2.initial}"`);
+    if (c2.followup && c2.followup.trim() !== '\u2014') parts.push(`Follow-up on that: "${c2.followup}"`);
+
+    if (parts.length === 0) {
+      const el = document.getElementById('nlp-section');
+      if (el) el.style.display = 'none';
+      return;
+    }
+
+    try {
+      const { text } = await callApi('/api/analyze', { responses: parts.join('\n\n') });
+      const el = document.getElementById('nlp-section');
+      if (!el) return;
+      const bullets = text.split('\n').filter(l => l.trim().startsWith('\u2022'));
+      if (bullets.length === 0) { el.style.display = 'none'; return; }
+      el.innerHTML = `
+        <h3>What your words reveal</h3>
+        ${bullets.map(b => `
+          <div class="nlp-insight">
+            <div class="nlp-dot"></div>
+            <p>${escHtml(b.replace(/^\u2022\s*/, ''))}</p>
+          </div>
+        `).join('')}
+      `;
+    } catch {
+      const el = document.getElementById('nlp-section');
+      if (el) el.style.display = 'none';
+    }
+  }
+
+  // ── Results ────────────────────────────────────────────────────
+  function showResults() {
+    const { pct, dims } = calcScores();
+    const cat = getCategory(pct);
+
+    const dimNames = {
+      emotional: 'Emotional regulation', empathy: 'Empathy for opponents',
+      openness:  'Openness to change',   behavior: 'Constructive behavior'
+    };
+    const dimRows = Object.entries(dimNames).map(([k, name]) => `
+      <div class="dim-row">
+        <div class="dim-name">${name}</div>
+        <div class="dim-bar-wrap"><div class="dim-bar-fill" style="width:${dims[k]}%"></div></div>
+        <div class="dim-pct">${dims[k]}%</div>
+      </div>
+    `).join('');
+
+    const openReflection = answers['open'] ? `
+      <div class="reflection-box">
+        <div class="reflection-label">Your reflection</div>
+        <p>\u201c${escHtml(answers['open'])}\u201d</p>
+      </div>
+    ` : '';
+
+    document.getElementById('results-area').innerHTML = `
+      <div class="score-circle">
+        <div class="score-number">${pct}</div>
+        <div class="score-label">out of 100</div>
+      </div>
+      <div class="result-category">${cat.name}</div>
+      <p class="result-description">${cat.description}</p>
+      ${openReflection}
+      <div class="nlp-section" id="nlp-section">
+        <h3>What your words reveal</h3>
+        <div class="loading-wrap">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          Analyzing your responses&hellip;
+        </div>
+      </div>
+      <div class="result-breakdown">
+        <h3>How you scored by dimension</h3>
+        ${dimRows}
+      </div>
+      <div class="result-breakdown" style="margin-bottom:28px">
+        <h3>One thing to try</h3>
+        <p style="font-size:15px; color:#4a4a4a; line-height:1.7">${cat.growth}</p>
+      </div>
+      ${buildDemoSummary()}
+    `;
+
+    show('screen-results');
+    loadNlpAnalysis(); // async — fills in the NLP section once API responds
+  }
+</script>
+</body>
+</html>
