@@ -1,16 +1,51 @@
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from environment
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// ── Detect which AI provider to use ───────────────────────────────
+const provider = process.env.ANTHROPIC_API_KEY ? 'anthropic'
+               : process.env.OPENAI_API_KEY    ? 'openai'
+               : null;
 
-// System prompts for each conversational question (kept server-side for security)
+if (!provider) {
+  console.error('ERROR: No API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in your .env file.');
+  process.exit(1);
+}
+
+const anthropic = provider === 'anthropic' ? new Anthropic() : null;
+const openai    = provider === 'openai'    ? new OpenAI()    : null;
+
+console.log(`Using provider: ${provider}`);
+
+// ── Unified chat function ──────────────────────────────────────────
+async function chat(systemPrompt, userText, maxTokens = 350) {
+  if (provider === 'anthropic') {
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userText }],
+    });
+    return response.content[0].text;
+  } else {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userText },
+      ],
+    });
+    return response.choices[0].message.content;
+  }
+}
+
+// ── System prompts (kept server-side so users never see them) ──────
 const CONV_PROMPTS = {
   conv1: `You are a thoughtful researcher studying how people experience political conflict.
 Someone has described a difficult political conversation they had. Read their account carefully and respond with:
@@ -33,6 +68,10 @@ Each insight is 1-2 sentences. Cover: (1) the most prominent emotional pattern i
 Avoid generic observations. Be concrete and specific. Do not moralize.
 Format as exactly 4 lines, each starting with "• ".`;
 
+// ── Routes ─────────────────────────────────────────────────────────
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.post('/api/chat', async (req, res) => {
   try {
     const { questionId, userText } = req.body;
@@ -40,13 +79,8 @@ app.post('/api/chat', async (req, res) => {
     if (!systemPrompt) return res.status(400).json({ error: 'Unknown question ID' });
     if (!userText || userText.trim().length < 5) return res.status(400).json({ error: 'Text too short' });
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userText.trim() }],
-    });
-    res.json({ text: message.content[0].text });
+    const text = await chat(systemPrompt, userText.trim(), 300);
+    res.json({ text });
   } catch (err) {
     console.error('Chat error:', err.message);
     res.status(500).json({ error: err.message });
@@ -58,13 +92,8 @@ app.post('/api/analyze', async (req, res) => {
     const { responses } = req.body;
     if (!responses || responses.trim().length < 10) return res.status(400).json({ error: 'No responses to analyze' });
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 500,
-      system: ANALYZE_PROMPT,
-      messages: [{ role: 'user', content: responses.trim() }],
-    });
-    res.json({ text: message.content[0].text });
+    const text = await chat(ANALYZE_PROMPT, responses.trim(), 500);
+    res.json({ text });
   } catch (err) {
     console.error('Analyze error:', err.message);
     res.status(500).json({ error: err.message });
