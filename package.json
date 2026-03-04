@@ -3,13 +3,8 @@
   "version": "1.0.0",
   "description": "Political conflict self-assessment with AI features",
   "type": "module",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "openai": "^4.0.0",
-    "express": "^4.18.0"
+    "openai": "^4.0.0"
   }
 }
